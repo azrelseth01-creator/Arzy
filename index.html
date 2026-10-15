@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arzy</title>
+<meta name="description" content="Arzy, a tiny AI buddy with big glasses. Chat, poke, and watch him react.">
+<meta name="theme-color" content="#14120f">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Arzy"><meta property="og:description" content="A tiny AI buddy with big glasses.">
+<style>
+:root{--bg:#f4f1ea;--fg:#1d1b19;--panel:#fffdf8;--line:#2b2724;--mute:#6f6a63;--me:#ffd966;--ar:#e9e4d8;--ac:#e4572e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14120f;--fg:#f1ece2;--panel:#1f1c18;--line:#f1ece2;--mute:#9b948a;--me:#a77d22;--ar:#322e28}}
+:root[data-theme="dark"]{--bg:#14120f;--fg:#f1ece2;--panel:#1f1c18;--line:#f1ece2;--mute:#9b948a;--me:#a77d22;--ar:#322e28}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.4 ui-rounded,"Trebuchet MS",system-ui,sans-serif;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column}
+#stage{position:relative;flex:1 1 54%;min-height:0;overflow:hidden;border-bottom:3px solid var(--line);transition:background .5s}
+#decor,#vfx,#flash{position:absolute;inset:0;width:100%;height:100%}
+#vfx{pointer-events:none;z-index:3}#flash{background:#fff;opacity:0;pointer-events:none;z-index:6}
+#bar{position:absolute;top:8px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.pill{background:#000b;color:#fff;border-radius:99px;padding:5px 13px;font-weight:800;font-size:13px;letter-spacing:.08em;display:flex;align-items:center;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:#4be27a;box-shadow:0 0 8px #4be27a}
+.ib{border:0;background:#000b;color:#fff;border-radius:99px;width:34px;height:34px;font-size:16px;cursor:pointer;margin-left:6px}
+#bubble{position:absolute;top:54px;left:50%;transform:translateX(-50%) scale(.9);opacity:0;transition:.15s;max-width:88%;min-width:110px;background:#fff;color:#111;border:3px solid #111;border-radius:12px;padding:8px 14px;font:700 15px/1.35 ui-monospace,"Courier New",monospace;z-index:4;box-shadow:3px 3px 0 #111;pointer-events:none}
+#bubble.on{opacity:1;transform:translateX(-50%) scale(1)}
+#bubble::after{content:"";position:absolute;left:50%;bottom:-11px;width:14px;height:14px;background:#fff;border-right:3px solid #111;border-bottom:3px solid #111;transform:translateX(-50%) rotate(45deg)}
+#wrap{position:absolute;left:50%;bottom:2%;height:60%;aspect-ratio:418/300;transform:translateX(-50%);z-index:2}
+#shadow{position:absolute;left:50%;bottom:-3%;width:70%;height:9%;transform:translateX(-50%);background:radial-gradient(#0007,#0000 70%)}
+#idle,#char{width:100%;height:100%;transform-origin:50% 100%}
+#idle{animation:bob 3s ease-in-out infinite}#idle.talk{animation:talk .26s ease-in-out infinite}
+#face{width:100%;height:100%;object-fit:contain;display:block;cursor:pointer;user-select:none;-webkit-user-drag:none;filter:drop-shadow(0 5px 0 #0002)}
+@keyframes bob{50%{transform:translateY(-2.5%) scale(1,1.015)}}
+@keyframes talk{50%{transform:translateY(-3.5%) scale(.98,1.03)}}
+.a-hop{animation:hop .6s 2}.a-shake{animation:shk .08s 7}.a-jolt{animation:jolt .5s}.a-tilt{animation:tilt .7s}.a-droop{animation:droop 1s}.a-wave{animation:wave .35s 4}.a-point{animation:pnt .5s}.a-pop{animation:pop .3s}
+@keyframes hop{0%,100%{transform:scale(1.05,.92)}35%{transform:translateY(-14%) scale(.95,1.06)}}
+@keyframes shk{0%,100%{transform:translateX(-2.5%) rotate(-1.5deg)}50%{transform:translateX(2.5%) rotate(1.5deg)}}
+@keyframes jolt{0%{transform:scale(1)}20%{transform:translateY(-10%) scale(1.18)}100%{transform:none}}
+@keyframes tilt{30%{transform:rotate(-7deg)}65%{transform:rotate(4deg)}}
+@keyframes droop{40%{transform:translateY(5%) scale(1,.95)}}
+@keyframes wave{50%{transform:rotate(6deg) translateX(2%)}0%,100%{transform:rotate(-5deg)}}
+@keyframes pnt{40%{transform:translateX(6%) scale(1.04)}}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.08)}}
+#stage.shk{animation:sshk .07s 8}@keyframes sshk{50%{transform:translate(5px,-4px)}}
+/* backgrounds */
+#stage[data-bg=room]{background:linear-gradient(#f7dcae 0 66%,#b9835a 66%)}
+#stage[data-bg=night]{background:linear-gradient(#070b2b,#2b2a6c)}
+#stage[data-bg=meadow]{background:linear-gradient(#7ccfff,#e6f7ff)}
+#stage[data-bg=sunset]{background:linear-gradient(#4d3a8c,#ff6f91 58%,#ffc27a)}
+#stage[data-bg=cyber]{background:linear-gradient(#0c0021,#3a0a6b)}
+#decor div{position:absolute}
+.win{left:7%;top:20%;width:20%;aspect-ratio:1;background:linear-gradient(#8fd3ff,#d6f1ff);border:6px solid #7a4b2a;border-radius:6px}
+.win::before,.win::after{content:"";position:absolute;background:#7a4b2a}.win::before{left:50%;top:0;bottom:0;width:4px}.win::after{top:50%;left:0;right:0;height:4px}
+.shelf{right:6%;top:34%;width:22%;height:8px;background:#7a4b2a;border-radius:3px}.plant{right:10%;top:22%;width:26px;height:34px;background:#4caf63;border-radius:50% 50% 8px 8px;border-bottom:10px solid #c0653a}
+.star{width:3px;height:3px;background:#fff;border-radius:50%;animation:tw 2s infinite alternate}@keyframes tw{to{opacity:.15}}
+.moon{right:12%;top:18%;width:48px;height:48px;border-radius:50%;background:#fff6c9;box-shadow:0 0 30px 8px #fff6c955}
+.hill{left:-20%;right:-20%;bottom:-32%;height:56%;border-radius:50%}
+.cloud{height:24px;width:80px;background:#fff;border-radius:20px;box-shadow:18px -10px 0 4px #fff;animation:drift 40s linear infinite}@keyframes drift{from{transform:translateX(-140px)}to{transform:translateX(120vw)}}
+.sun{width:62px;height:62px;border-radius:50%;background:#ffd84d;box-shadow:0 0 30px 10px #ffd84d66}
+.grid{left:0;right:0;bottom:0;height:36%;background:repeating-linear-gradient(90deg,#ff2bd655 0 2px,#0000 2px 44px),repeating-linear-gradient(0deg,#00e5ff55 0 2px,#0000 2px 26px);animation:gr 1s linear infinite;background-color:#14002e}@keyframes gr{to{background-position:0 26px,0 26px}}
+/* panel */
+#panel{flex:0 1 auto;max-height:46%;min-height:210px;display:flex;flex-direction:column;background:var(--panel)}
+#log{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:82%;padding:6px 11px;border-radius:14px;word-wrap:break-word;white-space:pre-wrap}
+.m.a{background:var(--ar);align-self:flex-start;border-bottom-left-radius:4px}.m.u{background:var(--me);align-self:flex-end;border-bottom-right-radius:4px;color:#1d1b19}
+.m b{display:block;font-size:11px;color:var(--ac);letter-spacing:.06em}
+#emotes{display:flex;gap:6px;overflow-x:auto;padding:6px 10px;border-top:1px solid #8884}
+.em{flex:0 0 auto;width:54px;border:2px solid var(--line);background:var(--bg);color:var(--fg);border-radius:10px;font-weight:600;font-size:9px;line-height:1.1;font-family:inherit;padding:2px 0 3px;cursor:pointer;text-align:center}
+.em img{width:40px;height:30px;object-fit:contain;display:block;margin:0 auto}.em:active{transform:scale(.94)}
+#row{display:flex;gap:8px;padding:8px 10px 10px}
+#txt{flex:1;min-width:0;border:3px solid var(--line);background:var(--bg);color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit;outline:none}
+#send{border:3px solid var(--line);background:var(--ac);color:#fff;border-radius:12px;padding:0 18px;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+#wake{position:absolute;inset:0;z-index:20;background:#000c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;cursor:pointer;text-align:center}
+#wake img{width:min(60vw,300px);animation:bob 2s infinite}#wake h1{margin:0;font-size:34px;letter-spacing:.2em}#wake p{margin:0;opacity:.8}
+@media (min-width:860px){#app{flex-direction:row}#stage{flex:1.5;border-bottom:0;border-right:3px solid var(--line)}#panel{max-height:none;flex:1;max-width:440px}}
+</style></head><body>
+<div id="app">
+ <div id="stage" data-bg="room">
+  <div id="decor"></div>
+  <div id="bar"><div class="pill"><span class="dot"></span>ARZY</div><div><button class="ib" id="bgb" title="Change background">🖼</button><button class="ib" id="mute" title="Sound">🔊</button></div></div>
+  <div id="bubble"></div>
+  <div id="wrap"><div id="shadow"></div><div id="idle"><div id="char"><img id="face" alt="Arzy"></div></div></div>
+  <canvas id="vfx"></canvas><div id="flash"></div>
+ </div>
+ <div id="panel"><div id="log"></div><div id="emotes"></div>
+  <div id="row"><input id="txt" placeholder="Say something to Arzy…" maxlength="160" autocomplete="off"><button id="send">SEND</button></div></div>
+ <div id="wake"><img id="wimg" alt=""><h1>ARZY</h1><p>tap anywhere to wake him up (sound on 🔊)</p></div>
+</div>
+<script>
+const S={"talking": "assets/sprites/talking.webp", "pointing": "assets/sprites/pointing.webp", "happy": "assets/sprites/happy.webp", "laughing": "assets/sprites/laughing.webp", "surprised": "assets/sprites/surprised.webp", "thinking": "assets/sprites/thinking.webp", "confused": "assets/sprites/confused.webp", "tired": "assets/sprites/tired.webp", "excited": "assets/sprites/excited.webp", "winking": "assets/sprites/winking.webp", "angry": "assets/sprites/angry.webp", "bye": "assets/sprites/bye.webp"};
+const $=i=>document.getElementById(i),sleep=ms=>new Promise(r=>setTimeout(r,ms)),R=(a,b)=>a+Math.random()*(b-a),pick=a=>a[(Math.random()*a.length)|0];
+Object.values(S).forEach(u=>{new Image().src=u});
+const face=$('face'),char=$('char'),idle=$('idle'),stage=$('stage'),bubble=$('bubble'),log=$('log');
+$('wimg').src=S.happy;face.src=S.happy;
+/* ---------- audio ---------- */
+let AC,master,muted=false;
+function initAudio(){if(AC)return;AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=.8;master.connect(AC.destination)}
+function T(f,d,type='square',v=.15,to=null,at=0){if(!AC||muted)return;const t=AC.currentTime+at,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.02)}
+function N(d,v=.2,f=1200,at=0){if(!AC||muted)return;const t=AC.currentTime+at,b=AC.createBuffer(1,AC.sampleRate*d,AC.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;fl.type='lowpass';fl.frequency.setValueAtTime(f,t);fl.frequency.exponentialRampToValueAtTime(80,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);s.connect(fl);fl.connect(g);g.connect(master);s.start(t)}
+const SFX={pop:()=>T(500,.08,'square',.12,900),ding:()=>{T(880,.15,'triangle',.2);T(1320,.25,'triangle',.16,null,.1)},
+laugh:()=>[0,1,2,3].forEach(i=>T(300+(i%2)*70,.09,'square',.13,null,i*.11)),stab:()=>{T(900,.14,'sawtooth',.16,300);N(.12,.15,3000)},
+hum:()=>{T(220,.3,'sine',.14,260);T(260,.3,'sine',.12,300,.3)},question:()=>{T(330,.1,'square',.12);T(440,.2,'square',.12,520,.12)},
+sad:()=>T(400,.6,'triangle',.18,170),fanfare:()=>[523,659,784,1047].forEach((f,i)=>T(f,.18,'square',.11,null,i*.08)),
+wink:()=>{T(1200,.05,'sine',.18);T(1700,.1,'sine',.16,null,.06)},boom:()=>{N(.4,.35,600);T(120,.3,'sawtooth',.25,40)},whoosh:()=>N(.45,.18,3000)};
+const VOICE={talking:1,happy:1.06,excited:1.18,angry:.88,tired:.78,confused:1.05,thinking:.95,laughing:1.1,surprised:1.2};
+function blip(){T(205*(VOICE[mood]||1)+R(-14,14),.06,'square',.11)}
+/* ---------- characters / emotions ---------- */
+const E={talking:{l:'Talk',an:'pop',sfx:'pop',line:'so, uh... wanna chat?'},pointing:{l:'Point',an:'point',sfx:'whoosh',line:'you. yes, you. over there.'},
+happy:{l:'Happy',fx:'sparkle',sfx:'ding',an:'hop',line:'today is a good day to be a pixel.'},laughing:{l:'Laugh',fx:'ha',sfx:'laugh',an:'shake',line:'ha ha ha! okay okay, i\'m good.'},
+surprised:{l:'Wow',fx:'exclaim',sfx:'stab',an:'jolt',flash:1,line:'whoa! where did you come from?!'},thinking:{l:'Think',fx:'dots',sfx:'hum',an:'tilt',line:'hmm... let me process that.'},
+confused:{l:'Huh?',fx:'question',sfx:'question',an:'tilt',line:'wait... what?'},tired:{l:'Tired',fx:'puff',sfx:'sad',an:'droop',line:'*sigh* ...i need a nap. or a byte.'},
+excited:{l:'Hype',fx:'confetti',sfx:'fanfare',an:'hop',line:'YESSS let\'s gooo!'},winking:{l:'Wink',fx:'sparkle',sfx:'wink',an:'tilt',line:'you didn\'t see that. i didn\'t do that.'},
+angry:{l:'Angry',fx:'anger',sfx:'boom',an:'shake',shake:1,line:'grr. who touched my keyboard?!'},bye:{l:'Bye',fx:'hearts',sfx:'whoosh',an:'wave',line:'see ya! don\'t be a stranger.'}};
+let mood='happy',token=0,talkTimer=null,lastAct=Date.now();
+function emote(k,fx=true){if(!E[k])return;mood=k;face.src=S[k];const d=E[k];char.className='';void char.offsetWidth;char.classList.add('a-'+d.an);
+ if(fx){if(d.fx)FX[d.fx]();SFX[d.sfx]&&SFX[d.sfx]();if(d.flash)flash();if(d.shake)shake()}}
+const MOUTHY=['talking','happy','pointing','excited','bye'];
+function talkAnim(on){idle.classList.toggle('talk',on);clearInterval(talkTimer);if(on&&MOUTHY.includes(mood)){const m=mood,alt=m==='talking'?'happy':'talking';let f=0;talkTimer=setInterval(()=>{face.src=S[(f^=1)?alt:m]},150)}else face.src=S[mood]}
+function flash(){const f=$('flash');f.animate([{opacity:.85},{opacity:0}],{duration:350})}
+function shake(){stage.classList.remove('shk');void stage.offsetWidth;stage.classList.add('shk')}
+/* ---------- VFX ---------- */
+const cv=$('vfx'),cx=cv.getContext('2d');let W=0,H=0,P=[];
+function fit(){const r=stage.getBoundingClientRect(),d=devicePixelRatio||1;W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',fit);
+const add=(n,f)=>{for(let i=0;i<n;i++)P.push(Object.assign({x:0,y:0,vx:0,vy:0,g:0,rot:0,vr:0,life:60,max:60,sz:20,d:0,k:'t',c:'#fff'},f(i)))};
+const hx=()=>W/2,hy=()=>H*.45;
+const FX={
+ confetti(){const cs=['#ff5d73','#ffd166','#06d6a0','#4cc9f0','#b388ff'];add(80,()=>({k:'r',x:R(0,W),y:R(-30,H*.15),vx:R(-1.5,1.5),vy:R(1,4),g:.03,rot:R(0,6),vr:R(-.2,.2),life:R(100,170),sz:R(6,11),c:pick(cs)}));add(10,()=>({t:'⭐',x:hx(),y:hy(),vx:R(-5,5),vy:R(-6,0),g:.12,life:60,sz:R(18,30)}))},
+ sparkle(){add(14,()=>({t:pick(['✨','⭐','✦']),x:hx()+R(-W*.24,W*.24),y:hy()+R(-H*.25,H*.2),vy:R(-.8,-.2),life:R(45,85),sz:R(16,28),vr:R(-.05,.05)}))},
+ hearts(){add(12,()=>({t:pick(['❤️','💖','💕']),x:hx()+R(-W*.2,W*.2),y:hy()+H*.2,vx:R(-.4,.4),vy:R(-2,-.8),life:R(70,110),sz:R(18,30)}))},
+ anger(){add(6,()=>({t:'💢',x:hx()+R(-20,W*.2),y:hy()-H*.15+R(-20,20),vx:R(-3,3),vy:R(-3,1),g:.05,life:50,sz:R(22,36)}));add(24,()=>({k:'r',c:'#ff3b30',x:hx(),y:hy(),vx:R(-5,5),vy:R(-5,5),life:20,sz:4}))},
+ ha(){['HA','HA','HA'].forEach((s,i)=>add(1,()=>({t:s,bold:1,x:hx()+W*.2,y:hy()-H*.05+i*28,vy:-.5,life:70,sz:28,d:i*8,rot:R(-.2,.2)})))},
+ question(){add(3,i=>({t:'❓',x:hx()+W*.16+i*26,y:hy()-H*.08,vy:-.8,life:80,sz:28+i*4,d:i*10,vr:.02}))},
+ exclaim(){add(1,()=>({t:'❗',x:hx()+W*.18,y:hy()-H*.1,life:55,sz:54,pop:1}));add(10,()=>({k:'r',c:'#ffd84d',x:hx()+W*.18,y:hy()-H*.1,vx:R(-3,3),vy:R(-3,3),life:20,sz:4}))},
+ puff(){add(4,i=>({t:'💨',x:hx()+W*.12,y:hy()+H*.05,vx:1.2,vy:-.3,life:60,sz:30,d:i*10}))},
+ dots(){add(3,i=>({t:'●',x:hx()+W*.18+i*22,y:hy()-H*.05,vy:-.3,life:90,sz:14,d:i*18,c:'#fff'}))}};
+function loop(){cx.clearRect(0,0,W,H);P=P.filter(p=>p.life>0);for(const p of P){if(p.d>0){p.d--;continue}p.life--;p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+ const a=Math.min(1,p.life/25);cx.save();cx.globalAlpha=a;cx.translate(p.x,p.y);cx.rotate(p.rot);
+ if(p.k==='r'){cx.fillStyle=p.c;cx.fillRect(-p.sz/2,-p.sz/4,p.sz,p.sz/2)}else{const s=p.pop?Math.min(1,(p.max-p.life+1)/8)*1.1:1;cx.scale(s,s);cx.font=(p.bold?'900 ':'')+p.sz+'px sans-serif';cx.textAlign='center';cx.textBaseline='middle';if(p.bold){cx.lineWidth=5;cx.strokeStyle='#fff';cx.strokeText(p.t,0,0);cx.fillStyle='#111'}else cx.fillStyle=p.c;cx.fillText(p.t,0,0)}cx.restore()}
+ requestAnimationFrame(loop)}
+/* ---------- backgrounds ---------- */
+const BG=['room','night','meadow','sunset','cyber'];let bgi=0;
+const DEC={room:'<div class="win"></div><div class="shelf"></div><div class="plant"></div>',
+ night:'<div class="moon"></div><div class="hill" style="background:#18204a"></div>',meadow:'<div class="sun" style="right:12%;top:16%"></div><div class="cloud" style="top:18%"></div><div class="cloud" style="top:30%;animation-delay:-18s;transform:scale(.7)"></div><div class="hill" style="background:#5cc26b"></div>',
+ sunset:'<div class="sun" style="left:50%;bottom:30%;margin-left:-31px;background:#ffe27a"></div><div class="hill" style="background:#3b2552"></div>',cyber:'<div class="sun" style="left:50%;top:22%;margin-left:-31px;background:linear-gradient(#ffe14d,#ff2bd6);box-shadow:0 0 40px 10px #ff2bd666"></div><div class="grid"></div>'};
+function setBg(i){bgi=(i+BG.length)%BG.length;const k=BG[bgi];stage.dataset.bg=k;let h=DEC[k];if(k==='night')for(let j=0;j<36;j++)h+=`<div class="star" style="left:${R(0,100)}%;top:${R(0,55)}%;animation-delay:${R(0,2)}s"></div>`;$('decor').innerHTML=h;return k}
+/* ---------- speech ---------- */
+function msg(who,t){const m=document.createElement('div');m.className='m '+(who==='a'?'a':'u');if(who==='a'){const b=document.createElement('b');b.textContent='ARZY';m.append(b)}const s=document.createElement('span');s.textContent=t;m.append(s);log.append(m);log.scrollTop=log.scrollHeight;return s}
+async function say(raw){const my=++token;lastAct=Date.now();clearTimeout(say.h);
+ const parts=raw.split(/\[(\w+)\]/);const beats=[];let e=null;for(let i=0;i<parts.length;i++){if(i%2)e=parts[i];else if(parts[i].trim())beats.push({e,t:parts[i].trim()})}
+ const el=msg('a','');let full='';
+ for(const b of beats){if(my!==token)return;if(b.e)emote(b.e);bubble.textContent='';bubble.classList.add('on');talkAnim(true);
+  for(const ch of b.t){if(my!==token)return;bubble.textContent+=ch;el.textContent=full+=ch;log.scrollTop=log.scrollHeight;if(/[a-z0-9]/i.test(ch))blip();await sleep(/[.!?]/.test(ch)?230:/[,…]/.test(ch)?120:38)}
+  full+=' ';talkAnim(false);await sleep(600)}
+ if(my===token){say.h=setTimeout(()=>{bubble.classList.remove('on');emote('happy',false)},2800)}}
+/* ---------- tiny brain ---------- */
+let user=null;const JOKES=['[talking]why don\'t scientists trust atoms? [laughing]because they make up everything. HA.','[winking]i told my computer i needed a break. [laughing]it said no problem, it\'ll go to sleep.','[thinking]what do you call a fake noodle? [laughing]an impasta. get it? ha ha.','[talking]i\'d tell you a udp joke... [confused]but you might not get it.','[talking]why did the developer go broke? [laughing]he used up all his cache.'];
+const BR=[
+[/^(hi|hello|hey|yo|sup|hola|kumusta)\b/i,()=>[`[happy]hey${user?' '+user:''}! [talking]what's up?`,'[winking]oh hi. i was just thinking about nothing. my specialty.']],
+[/my name is ([a-z ]{1,20})/i,(t,m)=>{user=m[1].trim().split(' ')[0];return `[surprised]oh! [happy]nice to meet you, ${user}. i'll remember that. probably.`}],
+[/(your name|who are you|who r u|what are you)/i,()=>['[talking]i\'m arzy. [happy]a tiny ai with big glasses.','[pointing]that\'s me! arzy. [winking]rule-based, but charming.']],
+[/how are (you|u)|how's it going|kumusta ka/i,()=>['[happy]doing great. [thinking]well... pixel-level great.','[talking]pretty good! my sprites are fresh today.']],
+[/joke|funny|pun/i,()=>JOKES],
+[/sing|song|music/i,()=>['[happy]♪ la la laaa... [confused]i only know three notes. [laughing]ha ha.']],
+[/(background|scene|wallpaper|\bbg\b|switch|change|go to)/i,t=>{const k=['room','night','meadow','sunset','cyber'].find(x=>t.includes(x));const n=setBg(k?BG.indexOf(k):bgi+1);return [`[excited]ooh, scene change! [happy]welcome to the ${n}.`]}],
+[/time|date|what day/i,()=>[`[thinking]hmm... [talking]it's ${new Date().toLocaleString([], {weekday:'long',hour:'2-digit',minute:'2-digit'})}. [tired]time flies when you're a sprite.`]],
+[/thank|thx|salamat/i,()=>['[happy]aw, no problem!','[winking]anytime. i work for compliments.']],
+[/(bye|goodbye|see you|good ?night|gn|paalam)/i,()=>['[bye]see ya! [happy]come back soon.']],
+[/(stupid|dumb|idiot|hate you|suck|ugly)/i,()=>['[angry]hey! [tired]...rude. [winking]jk. i forgive you.']],
+[/\b(love|cool|awesome|great|cute|smart|nice|amazing)\b/i,()=>['[excited]stop it, you\'re making me blush! [happy]thanks!','[surprised]really?! [happy]you\'re pretty great too.']],
+[/(sad|lonely|bad day|stress|tired|depress)/i,()=>['[tired]aw... [happy]hey, i\'m here. want a joke? just say "joke".']],
+[/(help|what can you|commands)/i,()=>['[pointing]try: hi, joke, sing, time, "my name is ...", math like 12*7, "night", or "be angry". [winking]or poke me.']],
+[/^(be|act|show|make|look|feel)\b/i,t=>{const k=Object.keys(E).find(x=>t.includes(x.slice(0,4)));return k?[`[${k}]${E[k].line}`]:['[confused]be... what? try "be angry" or "show happy".']}]];
+function think(t){const q=t.trim(),lq=q.toLowerCase();if(/^[\d\s+\-*/().%^]+$/.test(q)&&/\d/.test(q)&&/[+\-*/^%]/.test(q)){try{const v=Function('"use strict";return ('+q.replace(/\^/g,'**')+')')();if(isFinite(v))return `[thinking]hmm... [excited]that's ${+v.toFixed(6)}!`}catch(e){}}
+ for(const [re,f] of BR){const m=q.match(re);if(m){const r=f(lq,m);return Array.isArray(r)?pick(r):r}}
+ return pick([`[thinking]"${q.slice(0,40)}"... [confused]i don't have a rule for that yet. [winking]teach me later.`,'[confused]uh... did i miss something? say it another way?','[thinking]interesting... [happy]tell me more!'])}
+async function send(){const i=$('txt'),t=i.value.trim();if(!t)return;i.value='';msg('u',t);lastAct=Date.now();emote('thinking',false);SFX.pop();await sleep(400);say(think(t))}
+/* ---------- wiring ---------- */
+$('send').onclick=send;$('txt').onkeydown=e=>{if(e.key==='Enter')send()};
+$('bgb').onclick=()=>{initAudio();const n=setBg(bgi+1);SFX.whoosh();say(`[winking]scene: ${n}.`)};
+$('mute').onclick=e=>{muted=!muted;e.target.textContent=muted?'🔇':'🔊'};
+face.onclick=()=>say(pick(['[surprised]hey! [laughing]ha ha, that tickles!','[angry]poke me again and... [happy]jk. do it again.','[confused]...do i have something on my face?','[winking]boop.']));
+Object.keys(E).forEach(k=>{const b=document.createElement('button');b.className='em';b.innerHTML=`<img src="${S[k]}" alt=""><span>${E[k].l}</span>`;b.onclick=()=>say(`[${k}]${E[k].line}`);$('emotes').append(b)});
+$('wake').onclick=()=>{initAudio();$('wake').remove();fit();setBg(0);loop();SFX.fanfare();say("[surprised]oh! [happy]hey, i'm arzy. [talking]type something below, or poke me. [winking]i don't bite.");
+ setInterval(()=>{if(Date.now()-lastAct>16000){say(pick(['[tired]*yawn* it\'s quiet in here.','[thinking]...','[winking]psst. you can poke me.','[happy]nice day to be a pixel.','[pointing]try the emote buttons below!']))}},5000)};
+fit();setBg(0);
+</script></body></html>
